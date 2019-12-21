@@ -1,0 +1,132 @@
+"""
+Main experiment
+"""
+import json
+import os
+import argparse
+import torch
+import numpy as np
+from torch.utils.data import DataLoader
+from configparser import ConfigParser
+from datetime import datetime
+
+from vae.vae import VAE
+from utils.data import SpamDataset
+from utils.feature_extractor import FeatureExtractor
+from constants import MODELS
+from utils.visualization import mean_confidence_interval
+
+
+def argparser():
+    """
+    Command line argument parser
+    """
+    parser = argparse.ArgumentParser(description='VAE spam detector')
+    parser.add_argument('--model', type=str, required=True)
+    parser.add_argument(
+        '--globals', type=str, default='./configs/globals.ini', 
+        help="Path to the configuration file containing the global variables "
+             "e.g. the paths to the data etc. See configs/globals.ini for an "
+             "example."
+    )
+    parser.add_argument(
+        '--config', type=str, default=None,
+        help="Id of the model configuration file. If this argument is not null, "
+             "the system will look for the configuration file "
+             "./configs/{args.model}/{args.model}{args.config}.ini"
+    )
+    parser.add_argument(
+        '--restore', type=str, required=True, 
+        help="Path to a model checkpoint containing trained parameters. " 
+             "If provided, the model will load the trained parameters before "
+             "resuming training or making a prediction. By default, models are "
+             "saved in ./checkpoints/<args.model><args.config>/<date>/"
+    )
+    parser.add_argument(
+        '--n_epochs', type=int, default=None,
+        help="Maximum number of training iterations."
+    )
+    return parser.parse_args()
+
+
+def load_config(args):
+    """
+    Load .INI configuration files
+    """
+    config = ConfigParser()
+
+    # Load global variable (e.g. paths)
+    config.read(args.globals)
+
+    # Path to the directory containing the model configurations
+    model_config_dir = os.path.join(config['paths']['configs_directory'], '{}/'.format(args.model))
+
+    # Load default model configuration
+    default_model_config_filename = '{}.ini'.format(args.model)
+    default_model_config_path = os.path.join(model_config_dir, default_model_config_filename)
+    config.read(default_model_config_path)
+
+    if args.config:
+        model_config_filename = '{}{}.ini'.format(args.model, args.config)
+        model_config_path = os.path.join(model_config_dir, model_config_filename)
+        config.read(model_config_path)
+
+    config.set('model', 'device', 'cuda' if torch.cuda.is_available() else 'cpu')
+    if args.n_epochs is not None:
+        config.set('training', 'n_epochs', str(args.n_epochs))
+    return config
+
+def eval(config, testloader):
+    # storage = {
+    #     'loss': [], 'kldiv': [], '-logp(x|z)': [],
+    #     'precision': [], 'recall': [], 'log_densities': None, 'params': None
+    # }
+    input_dim = testloader.dataset.input_dim_
+    vae = VAE(input_dim, config, checkpoint_directory=None)
+    vae.to(config['model']['device'])
+    if args.restore is not None:
+        vae.restore_model(args.restore)
+    vae.eval()
+    precisions, recalls, all_log_densities = [], [], []
+    for _ in range(100):
+        _, _, precision, recall, log_densities = vae.evaluate(testloader)
+        precisions.append(precision)
+        recalls.append(recall)
+        all_log_densities.append(log_densities)
+    print(mean_confidence_interval(precisions))
+    print(mean_confidence_interval(recalls))
+    all_log_densities = np.concatenate(all_log_densities)
+    print(all_log_densities.shape)
+    # storage['log_densities'] = self._get_densities(trainloader)
+    # storage['params'] = self._get_parameters(trainloader)
+    # with open('./results/{}.pkl'.format(self.model_name), 'wb') as _f:
+    #     pickle.dump(storage, _f, pickle.HIGHEST_PROTOCOL)
+
+if __name__ == '__main__':
+    args = argparser()
+    config = load_config(args)
+
+    # Get data path
+    data_dir = config.get("paths", "data_directory")
+    test_data_file_name = config.get("paths", "test_data_file_name")
+    test_csv_path = os.path.join(data_dir, test_data_file_name)
+
+    # Set text processing function
+    transformer = FeatureExtractor(config)
+    raw_documents = transformer.get_raw_documents(test_csv_path)
+    transformer.fit(raw_documents)
+    transformer.log_vocabulary('data/test_vocab.txt')
+
+    test_data = SpamDataset(
+        test_csv_path,
+        label2int=json.loads(config.get("data", "label2int")),
+        transform=transformer.vectorize)
+
+    testloader = DataLoader(
+        test_data,
+        batch_size=config.getint("training", "batch_size"),
+        shuffle=True,
+        num_workers=0,
+        pin_memory=False)
+
+    eval(config, testloader)
