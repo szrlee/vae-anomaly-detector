@@ -82,14 +82,15 @@ def eval(config, testloader):
         vae.restore_model(args.restore_filename, epoch=None)
     vae.eval()
     precisions, recalls, all_log_densities = [], [], []
-    for _ in range(100):
+    for i in range(10):
+        print("evaluation round {}".format(i))
         _, _, precision, recall, log_densities = vae.evaluate(testloader)
         precisions.append(precision)
         recalls.append(recall)
-        all_log_densities.append(log_densities)
+        all_log_densities.append(np.expand_dims(log_densities, axis=1))
     print(mean_confidence_interval(precisions))
     print(mean_confidence_interval(recalls))
-    all_log_densities = np.concatenate(all_log_densities)
+    all_log_densities = np.concatenate(all_log_densities, axis=1)
     print(all_log_densities.shape)
     # storage['log_densities'] = self._get_densities(trainloader)
     # storage['params'] = self._get_parameters(trainloader)

@@ -294,10 +294,7 @@ class VAE(nn.Module):
             inputs = inputs.to(self._device)
             logtheta = self.forward(inputs)
             log_likelihood = -self.loglikelihood(reduction='none')(logtheta, inputs)
-            print(log_likelihood.shape)
             log_likelihood = torch.sum(log_likelihood, 1)
-            print(log_likelihood.shape)
-            print(inputs.shape)
             assert inputs.shape[0] == log_likelihood.shape[0]
             return self._to_numpy(log_likelihood)
 
