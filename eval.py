@@ -6,6 +6,7 @@ import os
 import argparse
 import torch
 import numpy as np
+import pickle
 from torch.utils.data import DataLoader
 from configparser import ConfigParser
 from datetime import datetime
@@ -72,10 +73,9 @@ def load_config(args):
     return config
 
 def eval(config, testloader):
-    # storage = {
-    #     'loss': [], 'kldiv': [], '-logp(x|z)': [],
-    #     'precision': [], 'recall': [], 'log_densities': None, 'params': None
-    # }
+    storage = {
+        'precision': None, 'recall': None, 'log_densities': None, 'params': None
+    }
     input_dim = testloader.dataset.input_dim_
     vae = VAE(input_dim, config, checkpoint_directory=None)
     vae.to(config['model']['device'])
@@ -92,13 +92,14 @@ def eval(config, testloader):
     print(mean_confidence_interval(precisions))
     print(mean_confidence_interval(recalls))
     all_log_densities = np.concatenate(all_log_densities, axis=1)
-    print(all_log_densities[0,:])
     batch_log_densities = logsumexp(all_log_densities, axis=1) - np.log(10)
-    print(batch_log_densities[0])
-    # storage['log_densities'] = self._get_densities(trainloader)
-    # storage['params'] = self._get_parameters(trainloader)
-    # with open('./results/{}.pkl'.format(self.model_name), 'wb') as _f:
-    #     pickle.dump(storage, _f, pickle.HIGHEST_PROTOCOL)
+    
+    storage['precision'] = mean_confidence_interval(precisions)
+    storage['recall'] = mean_confidence_interval(recalls)
+    storage['batch_log_densities'] = batch_log_densities
+    # storage['params'] = self._get_parameters(testloader)
+    with open('./results/test_{}.pkl'.format(config['model']['name']), 'wb') as _f:
+        pickle.dump(storage, _f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
     args = argparser()
