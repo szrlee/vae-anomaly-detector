@@ -127,6 +127,8 @@ if __name__ == '__main__':
         label2int=json.loads(config.get("data", "label2int")),
         transform=transformer.vectorize)
 
+    # No shuffle data in testset: to guarentee the same order of predictions
+    # from differemnt models.
     testloader = DataLoader(
         test_data,
         batch_size=config.getint("training", "batch_size"),
