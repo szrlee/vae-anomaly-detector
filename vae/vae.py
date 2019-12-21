@@ -173,6 +173,14 @@ class VAE(nn.Module):
         self.mu, self.logvar = self._encoder(inputs)
         latent = self._sample_z(self.mu, self.logvar)
         theta = self._decoder(latent)
+        #if torch.isnan(theta).any():
+            #index = torch.where(torch.isnan(theta))[0][0]
+            #print(index)
+            #print(inputs[index])
+            #print('mu: {}'.format(self.mu[index]))
+            #print('logvar: {}'.format(self.logvar[index]))
+            #print(latent[index])
+            #input()
         return theta
 
     def _to_numpy(self, tensor):
@@ -186,8 +194,8 @@ class VAE(nn.Module):
         Return the log-likelihood
         """
         if self._distr == 'poisson':
-            if reduction == 'none':
-                return self.poisson_cross_entropy
+            #if reduction == 'none':
+            #    return self.poisson_cross_entropy
             return nn.PoissonNLLLoss(reduction=reduction)
         elif self._distr == 'bernoulli':
             return nn.BCELoss(reduction=reduction)
@@ -218,6 +226,7 @@ class VAE(nn.Module):
                 inputs = inputs.to(self._device)
                 logtheta = self.forward(inputs)
                 loglikelihood = -self.loglikelihood(reduction='sum')(logtheta, inputs) / inputs.shape[0]
+                assert not torch.isnan(loglikelihood).any()
                 kl_div = -0.5 * torch.sum(1 + self.logvar - self.mu.pow(2) - self.logvar.exp()) / inputs.shape[0]
                 loss = -loglikelihood + kl_div
                 loss.backward()
@@ -294,6 +303,12 @@ class VAE(nn.Module):
             inputs = inputs.to(self._device)
             logtheta = self.forward(inputs)
             log_likelihood = -self.loglikelihood(reduction='none')(logtheta, inputs)
+            #if np.isnan(log_likelihood).any():
+            #    index = np.where(np.isnan(log_likelihood))
+            #    print(index)
+            #    index = index[0][0]
+            #    print(inputs[index,:])
+            #    print(logtheta[index,:])
             log_likelihood = torch.sum(log_likelihood, 1)
             assert inputs.shape[0] == log_likelihood.shape[0]
             return self._to_numpy(log_likelihood)
@@ -301,7 +316,7 @@ class VAE(nn.Module):
     def _find_threshold(self, dataloader):
         log_densities = self._get_densities(dataloader)
         lowest_density = np.argmin(log_densities)
-        self.threshold = np.percentile(log_densities, self.precentile_threshold)
+        self.threshold = np.nanpercentile(log_densities, self.precentile_threshold)
         return lowest_density
 
     def evaluate(self, dataloader):
@@ -321,6 +336,8 @@ class VAE(nn.Module):
             
 
         all_log_densities = np.array(all_log_densities)
+        if np.isnan(all_log_densities).any():
+            print(np.where(np.isnan(all_log_densities)))
         f1 = f1_score(ground_truth, predictions)
         accuracy = accuracy_score(ground_truth, predictions)
         precision = precision_score(ground_truth, predictions)
@@ -335,6 +352,9 @@ class VAE(nn.Module):
         log_density = self._evaluate_probability(inputs)
         predictions = np.zeros_like(log_density).astype(int)
         predictions[log_density < self.threshold] = 1
+        #if np.isnan(log_density).any():
+        #    print(inputs[np.where(np.isnan(log_density))])
+        #print(self.threshold)
         return list(predictions), log_density
 
     def save_checkpoint(self, f1_score):
