@@ -98,7 +98,7 @@ def eval(config, testloader):
     storage['recall'] = mean_confidence_interval(recalls)
     storage['batch_log_densities'] = batch_log_densities
     # storage['params'] = self._get_parameters(testloader)
-    with open('./results/test_{}.pkl'.format(config['model']['name']), 'wb') as _f:
+    with open('./results/test_{}{}.pkl'.format(config['model']['name'], config['model']['config_id']), 'wb') as _f:
         pickle.dump(storage, _f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
