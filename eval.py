@@ -79,7 +79,7 @@ def eval(config, testloader):
     vae = VAE(input_dim, config, checkpoint_directory=None)
     vae.to(config['model']['device'])
     if args.restore_filename is not None:
-        vae.restore_model(args.restore_filename, epochs_num=None)
+        vae.restore_model(args.restore_filename, epoch=None)
     vae.eval()
     precisions, recalls, all_log_densities = [], [], []
     for _ in range(100):
