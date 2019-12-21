@@ -102,7 +102,8 @@ if __name__ == '__main__':
 
     # Get data path
     data_dir = config.get("paths", "data_directory")
-    test_data_file_name = config.get("paths", "test_data_file_name")
+    # test_data_file_name = config.get("paths", "test_data_file_name")
+    test_data_file_name = config.get("paths", "train_data_file_name")
     test_csv_path = os.path.join(data_dir, test_data_file_name)
 
     # Set text processing function
