@@ -353,14 +353,14 @@ class VAE(nn.Module):
         }
         torch.save(checkpoint, model_path)
 
-    def restore_model(self, epoch):
+    def restore_model(self, filename, epoch):
         """
         Retore the model parameters
         """
-        model_path = '{}{}_{}.pt'.format(
+        model_path = '{}{}/{}.pt'.format(
             self.config['paths']['checkpoints_directory'],
             self.model_name,
-            epoch)
+            filename)
         checkpoint = torch.load(model_path)
         self.load_state_dict(checkpoint['model_state_dict'])
         self._optim.load_state_dict(checkpoint['optimizer_state_dict'])

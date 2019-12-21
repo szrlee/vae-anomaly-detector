@@ -36,15 +36,11 @@ def argparser():
              "./configs/{args.model}/{args.model}{args.config}.ini"
     )
     parser.add_argument(
-        '--restore', type=str, required=True, 
+        '--restore_filename', type=str, required=True, 
         help="Path to a model checkpoint containing trained parameters. " 
              "If provided, the model will load the trained parameters before "
              "resuming training or making a prediction. By default, models are "
              "saved in ./checkpoints/<args.model><args.config>/<date>/"
-    )
-    parser.add_argument(
-        '--n_epochs', type=int, default=None,
-        help="Maximum number of training iterations."
     )
     return parser.parse_args()
 
@@ -72,8 +68,6 @@ def load_config(args):
         config.read(model_config_path)
 
     config.set('model', 'device', 'cuda' if torch.cuda.is_available() else 'cpu')
-    if args.n_epochs is not None:
-        config.set('training', 'n_epochs', str(args.n_epochs))
     return config
 
 def eval(config, testloader):
@@ -85,7 +79,7 @@ def eval(config, testloader):
     vae = VAE(input_dim, config, checkpoint_directory=None)
     vae.to(config['model']['device'])
     if args.restore is not None:
-        vae.restore_model(args.restore)
+        vae.restore_model(args.restore_filename, epochs_num=None)
     vae.eval()
     precisions, recalls, all_log_densities = [], [], []
     for _ in range(100):
