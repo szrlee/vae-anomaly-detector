@@ -242,7 +242,7 @@ class VAE(nn.Module):
 
             if (epoch + 1) % print_every == 0:
                 epoch_time = self._get_time(start_time, time.time())
-                f1, acc, prec, recall, _ = self.evaluate(trainloader)
+                f1, acc, prec, recall, _, _ = self.evaluate(trainloader)
                 storage['precision'].append(prec)
                 storage['recall'].append(recall)
                 print('epoch: {} | loss: {:.3f} | -logp(x|z): {:.3f} | kldiv: {:.3f} | time: {}'.format(
@@ -254,7 +254,7 @@ class VAE(nn.Module):
                 print('F1. {:.3f} | acc. {:.3f} | prec.: {:.3f} | rec. {:.3f}'.format(f1, acc, prec, recall))
 
             if (epoch + 1) % self._save_every == 0:
-                f1, acc, prec, recall, _ = self.evaluate(trainloader)
+                f1, acc, prec, recall, _, _ = self.evaluate(trainloader)
                 self.save_checkpoint(f1)
 
         storage['log_densities'] = self._get_densities(trainloader)
@@ -326,24 +326,24 @@ class VAE(nn.Module):
         self._find_threshold(dataloader)
         predictions = []
         ground_truth = []
-        all_log_densities = []
+        log_densities = []
 
         for inputs, targets in dataloader:
             pred, mini_batch_log_densities = self.predict(inputs)
             predictions.extend(pred)
             ground_truth.extend(list(self._to_numpy(targets)))
-            all_log_densities.extend(mini_batch_log_densities)
+            log_densities.extend(mini_batch_log_densities)
             
 
-        all_log_densities = np.array(all_log_densities)
-        if np.isnan(all_log_densities).any():
-            print(np.where(np.isnan(all_log_densities)))
+        log_densities = np.array(log_densities)
+        if np.isnan(log_densities).any():
+            print(np.where(np.isnan(log_densities)))
         f1 = f1_score(ground_truth, predictions)
         accuracy = accuracy_score(ground_truth, predictions)
         precision = precision_score(ground_truth, predictions)
         recall = recall_score(ground_truth, predictions)
 
-        return f1, accuracy, precision, recall, all_log_densities
+        return f1, accuracy, precision, recall, log_densities, ground_truth
 
     def predict(self, inputs):
         """

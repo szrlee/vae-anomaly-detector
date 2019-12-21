@@ -74,7 +74,9 @@ def load_config(args):
 
 def eval(config, testloader):
     storage = {
-        'precision': None, 'recall': None, 'log_densities': None, 'params': None
+        'll_precision': None, 'll_recall': None, 
+        'log_densities': None, 'params': None,
+        'ground_truth': None
     }
     input_dim = testloader.dataset.input_dim_
     vae = VAE(input_dim, config, checkpoint_directory=None)
@@ -83,20 +85,21 @@ def eval(config, testloader):
         vae.restore_model(args.restore_filename, epoch=None)
     vae.eval()
     precisions, recalls, all_log_densities = [], [], []
+    # z sample sizes: 10
     for i in range(10):
         print("evaluation round {}".format(i))
-        _, _, precision, recall, log_densities = vae.evaluate(testloader)
+        _, _, precision, recall, log_densities, ground_truth = vae.evaluate(testloader)
         precisions.append(precision)
         recalls.append(recall)
         all_log_densities.append(np.expand_dims(log_densities, axis=1))
     print(mean_confidence_interval(precisions))
     print(mean_confidence_interval(recalls))
     all_log_densities = np.concatenate(all_log_densities, axis=1)
-    batch_log_densities = logsumexp(all_log_densities, axis=1) - np.log(10)
-    
-    storage['precision'] = mean_confidence_interval(precisions)
-    storage['recall'] = mean_confidence_interval(recalls)
-    storage['batch_log_densities'] = batch_log_densities
+    # log sum exponential
+    storage['log_densities'] = logsumexp(all_log_densities, axis=1) - np.log(10)
+    storage['ground_truth'] = ground_truth
+    storage['ll_precision'] = mean_confidence_interval(precisions)
+    storage['ll_recall'] = mean_confidence_interval(recalls)
     # storage['params'] = self._get_parameters(testloader)
     pkl_filename = './results/test/{}{}/{}.pkl'.format(config['model']['name'], \
       config['model']['config_id'], args.restore_filename)
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     testloader = DataLoader(
         test_data,
         batch_size=config.getint("training", "batch_size"),
-        shuffle=True,
+        shuffle=False,
         num_workers=0,
         pin_memory=False)
 
