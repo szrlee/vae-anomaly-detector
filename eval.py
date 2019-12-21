@@ -92,9 +92,9 @@ def eval(config, testloader):
     print(mean_confidence_interval(precisions))
     print(mean_confidence_interval(recalls))
     all_log_densities = np.concatenate(all_log_densities, axis=1)
-    print(all_log_densities.shape)
-    batch_log_densities = logsumexp(all_log_densities, axis=1)
-    print(batch_log_densities.shape)
+    print(all_log_densities[0,:])
+    batch_log_densities = logsumexp(all_log_densities, axis=1) - np.log(10)
+    print(batch_log_densities[0])
     # storage['log_densities'] = self._get_densities(trainloader)
     # storage['params'] = self._get_parameters(trainloader)
     # with open('./results/{}.pkl'.format(self.model_name), 'wb') as _f:
