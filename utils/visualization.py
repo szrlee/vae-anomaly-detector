@@ -24,7 +24,7 @@ def load_results(models):
         params[model] = results['params']
     return precision, recall, logp, kldiv, log_densities, params
 
-def load_test_results(models_filenames):
+def load_test_results(prefix, models):
     """
     Load evaluation results
         storage = {
@@ -34,11 +34,11 @@ def load_test_results(models_filenames):
     }
     """
     log_densities, params = {}, {}
-    for model_filename in models_filenames:
-        path_results = model_filename
+    for model in models:
+        path_results = '{}/{}.pkl'.format(prefix, model)
         results = load_pickle(path_results)
         # precision[model_filename] = results['ll_precision']
-        log_densities[model_filename] = results['log_densities']
+        log_densities[model] = results['log_densities']
         ground_truth = results['ground_truth']
         # assert that ground truth from all models results are the same
     return log_densities, params, ground_truth

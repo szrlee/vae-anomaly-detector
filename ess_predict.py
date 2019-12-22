@@ -20,12 +20,12 @@ def make_plots(args):
         visualization.hist_densities(log_densities[model], model)
         visualization.hist_param(params[model].reshape(-1), model)
 
-def evaluate(models):
+def evaluate(prefix, models):
     """
     Evaluate accuracy.
     """
     log_densities_models = []
-    log_densities, _, ground_truth = visualization.load_test_results(models)
+    log_densities, _, ground_truth = visualization.load_test_results(prefix, models)
     for model in models:
         print(log_densities[model].shape)
         input()
@@ -96,9 +96,10 @@ def _evaluate_ess(log_densities_models):
 
 
 if __name__ == '__main__':
-    models_filenames = [
-        '',
-        '',
-        ''
+    prefix = "/data1/yrli/vae-anomaly-detector/results/test"
+    models = [
+        'boc00/2019_12_22_00_25/epoch_940-f1_0.7372429550647371',
+        'boc01/2019_12_22_03_37/epoch_950-f1_0.7126436781609196',
+        'boc02/2019_12_22_03_37/epoch_1000-f1_0.7208588957055215'
     ]
-    evaluate(models_filenames)
+    evaluate(prefix, models)
