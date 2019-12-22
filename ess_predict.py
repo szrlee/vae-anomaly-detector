@@ -48,9 +48,9 @@ def evaluate(models):
     precision = precision_score(ground_truth, predictions)
     recall = recall_score(ground_truth, predictions)
     print("[ESS] f1: {} | accuracy: {} | precision: {}, recall: {}".format(f1, accuracy, precision, recall))
-    print("[LL] precision: {}| recall: {}".\
-        format(mean_confidence_interval(ll_precisions_models),
-        mean_confidence_interval(ll_recalls_models)))
+    # print("[LL] precision: {}| recall: {}".\
+    #     format(mean_confidence_interval(ll_precisions_models),
+    #     mean_confidence_interval(ll_recalls_models)))
     # return f1, accuracy, precision, recall, ll_precisions, ll_recalls
 
 def predict_ess(log_densities_models):
