@@ -24,18 +24,22 @@ def evaluate(models):
     """
     Evaluate accuracy.
     """
-    log_densities_models, ll_precisions_models, ll_recalls_models = [], [], []
-    ll_precisions, ll_recalls, log_densities, _, ground_truth = visualization.load_test_results(models)
+    log_densities_models = []
+    log_densities, _, ground_truth = visualization.load_test_results(models)
     for model in models:
         print(log_densities[model].shape)
         input()
         log_densities_models.append(np.expand_dims(log_densities[model], axis=1))
-        ll_precisions_models.append(ll_precisions[model])
-        ll_recalls_models.append(ll_recalls[model])
+        # ll_precisions_models.append(ll_precisions[model])
+        # ll_recalls_models.append(ll_recalls[model])
 
     log_densities_models = np.concatenate(log_densities_models, axis=1)
 
-    predictions, ess = predict(log_densities_models)
+    predictions, ess = predict_ess(log_densities_models)
+
+    # predict_ll_ensemble
+
+    # predict_ll_ess
 
     if np.isnan(ess).any():
         print(np.where(np.isnan(ess)))
@@ -49,7 +53,7 @@ def evaluate(models):
         mean_confidence_interval(ll_recalls_models)))
     # return f1, accuracy, precision, recall, ll_precisions, ll_recalls
 
-def predict(log_densities_models):
+def predict_ess(log_densities_models):
     """
     Predict the class of the inputs via effective sample size (ESS)
     """
@@ -62,9 +66,25 @@ def predict(log_densities_models):
     #print(self.threshold)
     return list(predictions), ess
 
-def _find_threshold(ess):
-    # lowest_ess = np.argmin(ess)
-    threshold = np.nanpercentile(ess, 10)
+def predict_ll_ensemble(log_densities_models):
+    """
+    Predict the class of the inputs
+    """
+    N_models = log_densities_models.shape[1]
+    thres_models = _find_threshold(log_densities_models)
+    print(thres_models.shape)
+    predictions = np.zeros_like(log_densities_models[:,0]).astype(int)
+    print(predictions.shape)
+    predictions_models = np.zeros_like(log_densities_models).astype(int)
+    predictions_models[log_densities_models < thres_models] = 1
+    predictions[predictions_models.sum(axis=1)/N_models > 0.5] = 1
+    #if np.isnan(log_density).any():
+    #    print(inputs[np.where(np.isnan(log_density))])
+    #print(self.threshold)
+    return list(predictions), log_densities_models
+
+def _find_threshold(nparray):
+    threshold = np.nanpercentile(nparray, 10, axis=0)
     return threshold
 
 def _evaluate_ess(log_densities_models):

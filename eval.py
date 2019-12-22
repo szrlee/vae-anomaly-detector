@@ -74,7 +74,7 @@ def load_config(args):
 
 def eval(config, testloader):
     storage = {
-        'll_precision': None, 'll_recall': None, 
+        # 'll_precision': None, 'll_recall': None, 
         'log_densities': None, 'params': None,
         'ground_truth': None
     }
@@ -98,8 +98,8 @@ def eval(config, testloader):
     # log sum exponential
     storage['log_densities'] = logsumexp(all_log_densities, axis=1) - np.log(10)
     storage['ground_truth'] = ground_truth
-    storage['ll_precision'] = mean_confidence_interval(precisions)
-    storage['ll_recall'] = mean_confidence_interval(recalls)
+    # storage['ll_precision'] = mean_confidence_interval(precisions)
+    # storage['ll_recall'] = mean_confidence_interval(recalls)
     # storage['params'] = self._get_parameters(testloader)
     pkl_filename = './results/test/{}{}/{}.pkl'.format(config['model']['name'], \
       config['model']['config_id'], args.restore_filename)
