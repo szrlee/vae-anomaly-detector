@@ -85,8 +85,8 @@ def eval(config, testloader):
         vae.restore_model(args.restore_filename, epoch=None)
     vae.eval()
     precisions, recalls, all_log_densities = [], [], []
-    # z sample sizes: 10
-    for i in range(10):
+    # z sample sizes: 100
+    for i in range(100):
         print("evaluation round {}".format(i))
         _, _, precision, recall, log_densities, ground_truth = vae.evaluate(testloader)
         precisions.append(precision)
@@ -96,7 +96,7 @@ def eval(config, testloader):
     print(mean_confidence_interval(recalls))
     all_log_densities = np.concatenate(all_log_densities, axis=1)
     # log sum exponential
-    storage['log_densities'] = logsumexp(all_log_densities, axis=1) - np.log(10)
+    storage['log_densities'] = logsumexp(all_log_densities, axis=1) - np.log(100)
     storage['ground_truth'] = ground_truth
     # storage['ll_precision'] = mean_confidence_interval(precisions)
     # storage['ll_recall'] = mean_confidence_interval(recalls)
@@ -115,10 +115,12 @@ if __name__ == '__main__':
     data_dir = config.get("paths", "data_directory")
     test_data_file_name = config.get("paths", "test_data_file_name")
     test_csv_path = os.path.join(data_dir, test_data_file_name)
-
+    data_file_name = config.get("paths", "data_file_name")
+    corpus_csv_path = os.path.join(data_dir, data_file_name)
+    
     # Set text processing function
     transformer = FeatureExtractor(config)
-    raw_documents = transformer.get_raw_documents(test_csv_path)
+    raw_documents = transformer.get_raw_documents(corpus_csv_path)
     transformer.fit(raw_documents)
     transformer.log_vocabulary('data/test_vocab.txt')
 

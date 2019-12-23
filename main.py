@@ -97,10 +97,12 @@ if __name__ == '__main__':
     data_dir = config.get("paths", "data_directory")
     train_data_file_name = config.get("paths", "train_data_file_name")
     train_csv_path = os.path.join(data_dir, train_data_file_name)
+    data_file_name = config.get("paths", "data_file_name")
+    corpus_csv_path = os.path.join(data_dir, data_file_name)
 
     # Set text processing function
     transformer = FeatureExtractor(config)
-    raw_documents = transformer.get_raw_documents(train_csv_path)
+    raw_documents = transformer.get_raw_documents(corpus_csv_path)
     transformer.fit(raw_documents)
     transformer.log_vocabulary('data/vocab.txt')
 
